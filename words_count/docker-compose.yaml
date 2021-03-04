@@ -1,0 +1,80 @@
+version: '3.7'
+services:
+    django:
+        build: .
+        command: python manage.py runserver 0.0.0.0:5000
+        ports:
+            - "5000:5000"
+        volumes:
+            - .:/django_app
+        environment:
+            - DATABASE_URL=postgresql://postgres:password@postgres:5432/words_count
+            - CELERY_BROKER=redis://redis:6379/0
+            - CELERY_RESULT_BACKEND=redis://redis:6379/0
+        depends_on:
+            - postgres
+            - redis
+    postgres:
+        image: postgres:12-alpine
+        ports:
+            - "5432:5432"
+        environment:
+            - SQL_ENGINE='django.db.backends.postgresql_psycopg2'
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=password
+            - POSTGRES_DB=words_count
+    redis:
+        image: redis:5.0.7
+        ports:
+            - "6379:6379"
+    celery:
+        build: .
+        command: celery -A words_count.celery worker -l INFO
+#        command: celery worker --app celeryapp --loglevel=info
+        environment:
+            - DEBUG=1
+            - DATABASE_URL=postgresql://postgres:password@postgres:5432/words_count
+            - CELERY_BROKER_URL=redis://redis:6379/0
+            - CELERY_RESULT_BACKEND=redis://redis:6379/0
+        depends_on:
+            - postgres
+            - redis
+            - django
+
+    nsqlookupd:
+        image: nsqio/nsq:v1.2.0
+        command: /nsqlookupd
+        container_name: nsqlookupd
+        ports:
+            - "4160:4160"
+            - "4161:4161"
+
+    nsqd:
+        container_name: nsqd
+        image: nsqio/nsq:v1.2.0
+        command: /nsqd --lookupd-tcp-address=nsqlookupd:4160 --broadcast-address=nsqd
+        depends_on:
+            - nsqlookupd
+        ports:
+            - "4150:4150"
+            - "4151:4151"
+
+    nsqadmin:
+        image: nsqio/nsq:v1.2.0
+        command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
+        depends_on:
+            - nsqlookupd
+            - nsqd
+        ports:
+            - "4171:4171"
+
+    consumer:
+        build: ../consumer
+        container_name: consumer
+        environment:
+            - NSQ_ADDR=nsqd:4150
+            - POST_ADDR=django:5000
+        depends_on:
+            - nsqd
+            - nsqlookupd
+            - django

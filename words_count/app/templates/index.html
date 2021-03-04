@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+     <div class="d-flex justify-content-center flex-wrap mt-5 mb-5">
+         <h3 class="mb-3 text-center">This app implements counting how many times the word - "python" occurs on a web page.</h3>
+         <h4 class="mb-3 text-center text-muted">To get the results, fill out the form with the site address and click the "Count" button.</h4>
+         <form class="mt-5" action="{% url 'index' %}" method="POST" style="width: 45%;">
+             {% csrf_token %}
+             <div class="form-group">
+                 <label for="address">Web site address</label>
+                 <input type="url" class="form-control" id="address" placeholder="https://example.com" name="address">
+             </div>
+             <button type="submit" class="btn btn-primary">Count</button>
+         </form>
+     </div>
+{% endblock %}

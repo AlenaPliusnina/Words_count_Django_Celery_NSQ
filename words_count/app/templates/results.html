@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+     <div class="mt-5" style="width: 90%; margin: auto;">
+         <h4 class="mb-2">Results:</h4>
+         <table class="table table-striped">
+             <thead>
+                 <tr>
+                     <th scope="col">#</th>
+                     <th scope="col">Web site url</th>
+                     <th scope="col">Count or error</th>
+                 </tr>
+             </thead>
+             <tbody>
+             {% for result in results %}
+                 <tr>
+                     <th scope="row">{{ result.id }}</th>
+                     <td>{{ result.address }}</td>
+                     {% if result.http_status_code == 200 %}
+                     <td>Count: {{ result.words_count }}; HTTP status: {{ result.http_status_code }} OK</td>
+                     {% elif result.about_error != "None" %}
+                     <td>Error description: {{ result.about_error }}</td>
+                     {% else %}
+                     <td>HTTP Error: {{ result.http_status_code }}</td>
+                     {% endif %}
+                 </tr>
+             {% endfor %}
+             </tbody>
+         </table>
+     </div>
+{% endblock %}
